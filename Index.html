@@ -163,8 +163,34 @@
             align-items: center;
             justify-content: center;
             gap: 0.5rem;
+            position: relative;
+  overflow: hidden;
         }
 
+        .btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transition: width 0.3s, height 0.3s, top 0.3s, left 0.3s;
+}
+
+.btn:hover::after {
+  width: 300px;
+  height: 300px;
+  top: -150px;
+  left: -150px;
+}
+        /* تحسين إمكانية الوصول */
+.form-input:focus, .btn:focus {
+  outline: 2px solid var(--primary-500);
+  outline-offset: 2px;
+}
+        
         .btn-block {
             width: 100%;
         }
@@ -2615,6 +2641,72 @@
             // تحديد خيار "لا تكرار" افتراضياً
             document.querySelector('.repeat-option[data-value="none"]').classList.add('selected');
         });
+        
+        // تحسين وظيفة التعقيم
+function sanitizeInput(input) {
+  if (typeof input !== 'string') return '';
+  const div = document.createElement('div');
+  div.textContent = input;
+  return div.innerHTML.replace(/[<>]/g, '');
+}
+
+// تحقق أقوى من البريد الإلكتروني
+function validateEmail(email) {
+  const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return re.test(String(email).toLowerCase());
+}
+        // إضافة شاشة تحميل
+function showLoadingScreen() {
+  document.body.innerHTML = `
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; flex-direction: column;">
+      <div class="auth-logo" style="font-size: 3rem; margin-bottom: 1rem;">
+        <i class="fas fa-rocket"></i>
+        TaskFlow
+      </div>
+      <div class="spinner"></div>
+      <p style="margin-top: 1rem;">جاري التحميل...</p>
+    </div>
+  `;
+}
+       // طلب إذن الإشعارات
+function requestNotificationPermission() {
+  if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission().then(permission => {
+      if (permission === "granted") {
+        console.log("تم تفعيل الإشعارات");
+      }
+    });
+  }
+} 
+        // إرسال إشعار
+function sendNotification(title, options = {}) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification(title, {
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      ...options
+    });
+  }
+}
+       // تصدير المهام إلى التقويم
+function exportToCalendar(task) {
+  const startDate = new Date(`${task.date}T${task.time || '12:00'}`);
+  const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // +1 ساعة
+  
+  const icsContent = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'BEGIN:VEVENT',
+    `DTSTART:${formatDateToICS(startDate)}`,
+    `DTEND:${formatDateToICS(endDate)}`,
+    `SUMMARY:${task.title}`,
+    `DESCRIPTION:${task.description || ''}`,
+    'END:VEVENT',
+    'END:VCALENDAR'
+  ].join('\n'); 
+    
+    downloadFile(icsContent, 'task.ics', 'text/calendar');
+}
     </script>
 </body>
 </html>
