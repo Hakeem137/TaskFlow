@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TaskFlow - المنصة الذكية لإدارة المهام</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- شاشة تسجيل الدخول -->
+    <div id="authScreen" class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fas fa-rocket"></i>
+                    TaskFlow
+                </div>
+                <p class="auth-subtitle">المنصة الذكية لإدارة المهام</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label" for="loginEmail">البريد الإلكتروني</label>
+                    <input type="email" class="form-input" id="loginEmail" placeholder="ادخل بريدك الإلكتروني" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="loginPassword">كلمة المرور</label>
+                    <input type="password" class="form-input" id="loginPassword" placeholder="ادخل كلمة المرور" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    تسجيل الدخول
+                </button>
+            </form>
+
+            <div class="auth-divider">
+                <span>أو</span>
+            </div>
+
+            <button class="btn btn-google btn-block" id="googleLoginBtn">
+                <i class="fab fa-google"></i>
+                متابعة بحساب Google
+            </button>
+
+            <div class="auth-footer">
+                ليس لديك حساب؟ 
+                <span class="auth-link" id="showRegister">سجل الآن</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- نموذج إنشاء حساب -->
+    <div id="registerModal" class="form-modal">
+        <div class="form-content">
+            <div class="form-header">
+                <h3 class="form-title">إنشاء حساب جديد</h3>
+                <button class="close-btn" id="closeRegister">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label class="form-label" for="registerName">الاسم الكامل</label>
+                    <input type="text" class="form-input" id="registerName" placeholder="ادخل اسمك الكامل" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="registerEmail">البريد الإلكتروني</label>
+                    <input type="email" class="form-input" id="registerEmail" placeholder="ادخل بريدك الإلكتروني" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="registerPassword">كلمة المرور</label>
+                    <input type="password" class="form-input" id="registerPassword" placeholder="اختر كلمة مرور قوية" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="registerConfirmPassword">تأكيد كلمة المرور</label>
+                    <input type="password" class="form-input" id="registerConfirmPassword" placeholder="أعد كتابة كلمة المرور" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" id="registerBtn">
+                    <i class="fas fa-user-plus"></i>
+                    إنشاء حساب
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- نموذج الملف الشخصي -->
+    <div id="profileModal" class="form-modal">
+        <div class="form-content">
+            <div class="form-header">
+                <h3 class="form-title">أكمل ملفك الشخصي</h3>
+            </div>
+
+            <div class="info-note">
+                <i class="fas fa-info-circle"></i>
+                هذه البيانات ستساعدنا في تخصيص تجربتك وإضافة مميزات جديدة تناسبك. هناك مفاجأة قريباً! 🎁
+            </div>
+
+            <form id="profileForm">
+                <div class="form-group">
+                    <label class="form-label" for="profileBirthdate">تاريخ الميلاد</label>
+                    <input type="date" class="form-input" id="profileBirthdate" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="profileUserType">نوع المستخدم</label>
+                    <select class="form-select" id="profileUserType" required>
+                        <option value="">اختر نوع المستخدم</option>
+                        <option value="highschool">طالب ثانوية عامة</option>
+                        <option value="college">طالب جامعي</option>
+                        <option value="general">شخص عادي</option>
+                    </select>
+                </div>
+
+                <!-- حقول طالب الثانوية -->
+                <div id="highschoolFields" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label" for="profileSection">القسم</label>
+                        <select class="form-select" id="profileSection">
+                            <option value="science">علمي علوم</option>
+                            <option value="math">علمي رياضة</option>
+                            <option value="literary">أدبي</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- حقول طالب الجامعة -->
+                <div id="collegeFields" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label" for="profileCollege">الكلية</label>
+                        <input type="text" class="form-input" id="profileCollege" placeholder="اسم الكلية">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="profileMajor">التخصص</label>
+                        <input type="text" class="form-input" id="profileMajor" placeholder="التخصص الدراسي">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="profileYear">السنة الدراسية</label>
+                        <select class="form-select" id="profileYear">
+                            <option value="1">الأولى</option>
+                            <option value="2">الثانية</option>
+                            <option value="3">الثالثة</option>
+                            <option value="4">الرابعة</option>
+                            <option value="5">الخامسة</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-save"></i>
+                    حفظ والبدء
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- الشاشة الرئيسية -->
+    <div id="mainScreen" style="display: none;">
+        <!-- الهيدر -->
+        <header class="main-header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo">
+                        <i class="fas fa-rocket"></i>
+                        TaskFlow
+                    </div>
+
+                    <div class="header-controls">
+                        <button class="search-toggle" id="searchToggle">
+                            <i class="fas fa-search"></i>
+                        </button>
+                        <button class="focus-toggle" id="focusToggle">
+                            <i class="fas fa-crosshairs"></i>
+                        </button>
+                        <button class="theme-toggle" id="themeToggle">
+                            <i class="fas fa-moon"></i>
+                        </button>
+
+                        <div class="user-menu">
+                            <div class="user-avatar" id="userAvatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- شريط البحث -->
+        <div id="searchBar" style="display: none; background: var(--surface); padding: 1rem 0; border-bottom: 1px solid var(--border);">
+            <div class="container">
+                <div class="search-box">
+                    <input type="text" class="search-input" id="searchInput" placeholder="ابحث في المهام...">
+                    <i class="fas fa-search search-icon"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- المحتوى الرئيسي -->
+        <main class="main-content">
+            <div class="container">
+                <div class="dashboard-grid">
+                    <!-- الشريط الجانبي -->
+                    <aside class="sidebar">
+                        <div class="sidebar-section">
+                            <h3 class="sidebar-title">
+                                <i class="fas fa-chart-pie"></i>
+                                الإحصائيات
+                            </h3>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-number" id="totalTasks">0</div>
+                                    <div class="stat-label">المهام الكلية</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number" id="completedTasks">0</div>
+                                    <div class="stat-label">مكتملة</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number" id="pendingTasks">0</div>
+                                    <div class="stat-label">قيد التنفيذ</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number" id="overdueTasks">0</div>
+                                    <div class="stat-label">متأخرة</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <h3 class="sidebar-title">
+                                <i class="fas fa-fire"></i>
+                                سلاسل النجاح
+                            </h3>
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-number" id="currentStreak">0</div>
+                                    <div class="stat-label">الأيام الحالية</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number" id="longestStreak">0</div>
+                                    <div class="stat-label">أطول سلسلة</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <button class="btn btn-primary btn-block" id="addTaskBtn">
+                                <i class="fas fa-plus"></i>
+                                إضافة مهمة جديدة
+                            </button>
+                            <button class="btn btn-secondary btn-block" id="addHabitBtn" style="margin-top: 0.5rem;">
+                                <i class="fas fa-redo"></i>
+                                إضافة عادة جديدة
+                            </button>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <h3 class="sidebar-title">
+                                <i class="fas fa-trophy"></i>
+                                الإنجازات
+                            </h3>
+                            <div class="achievements-grid" id="achievementsList">
+                                <!-- الإنجازات تضاف هنا -->
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- المحتوى الرئيسي -->
+                    <div class="main-content-area">
+                        <!-- التبويبات -->
+                        <div class="tabs">
+                            <button class="tab active" data-tab="tasks">المهام</button>
+                            <button class="tab" data-tab="habits">العادات</button>
+                            <button class="tab" data-tab="analytics">الإحصائيات</button>
+                            <button class="tab" data-tab="templates">القوالب</button>
+                        </div>
+
+                        <!-- محتوى تبويب المهام -->
+                        <div class="tab-content active" id="tasksTab">
+                            <section class="tasks-section">
+                                <div class="section-header">
+                                    <h2 class="section-title">مهامي</h2>
+                                    <div class="filter-controls">
+                                        <button class="btn btn-secondary" id="filterBtn">
+                                            <i class="fas fa-filter"></i>
+                                            تصفية
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="tasks-grid" id="tasksList">
+                                    <!-- المهام تضاف هنا -->
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- محتوى تبويب العادات -->
+                        <div class="tab-content" id="habitsTab">
+                            <section class="tasks-section">
+                                <div class="section-header">
+                                    <h2 class="section-title">عاداتي</h2>
+                                    <p>تابع تقدمك في بناء العادات الإيجابية</p>
+                                </div>
+
+                                <div class="habits-grid" id="habitsList">
+                                    <!-- العادات تضاف هنا -->
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- محتوى تبويب الإحصائيات -->
+                        <div class="tab-content" id="analyticsTab">
+                            <section class="tasks-section">
+                                <div class="section-header">
+                                    <h2 class="section-title">تحليلات الأداء</h2>
+                                    <p>تتبع تقدمك وأدائك over time</p>
+                                </div>
+
+                                <div class="analytics-grid">
+                                    <div class="chart-container">
+                                        <h3 class="chart-title">إنجاز المهام</h3>
+                                        <canvas id="completionChart" width="400" height="200"></canvas>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h3 class="chart-title">التوزيع حسب الأولوية</h3>
+                                        <canvas id="priorityChart" width="400" height="200"></canvas>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h3 class="chart-title">الإنتاجية الأسبوعية</h3>
+                                        <canvas id="productivityChart" width="400" height="200"></canvas>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h3 class="chart-title">التوزيع حسب الفئة</h3>
+                                        <canvas id="categoryChart" width="400" height="200"></canvas>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- محتوى تبويب القوالب -->
+                        <div class="tab-content" id="templatesTab">
+                            <section class="tasks-section">
+                                <div class="section-header">
+                                    <h2 class="section-title">قوالب جاهزة</h2>
+                                    <p>اختر من القوالب المعدة مسبقاً لتسريع عملك</p>
+                                </div>
+
+                                <div class="tasks-grid">
+                                    <div class="task-card">
+                                        <div class="task-header">
+                                            <h3 class="task-title">قالب المذاكرة اليومية</h3>
+                                        </div>
+                                        <p>روتين مثالي لتنظيم جلسات المذاكرة والمهام الدراسية</p>
+                                        <div class="task-actions">
+                                            <button class="btn btn-primary" onclick="loadTemplate('study')">
+                                                <i class="fas fa-download"></i>
+                                                استخدام القالب
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="task-card">
+                                        <div class="task-header">
+                                            <h3 class="task-title">قالب العمل اليومي</h3>
+                                        </div>
+                                        <p>تنظيم المهام المهنية والاجتماعات والمشاريع</p>
+                                        <div class="task-actions">
+                                            <button class="btn btn-primary" onclick="loadTemplate('work')">
+                                                <i class="fas fa-download"></i>
+                                                استخدام القالب
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="task-card">
+                                        <div class="task-header">
+                                            <h3 class="task-title">قالب الروتين الصباحي</h3>
+                                        </div>
+                                        <p>بدء اليوم بنشاط وتركيز مع روتين صباحي منظم</p>
+                                        <div class="task-actions">
+                                            <button class="btn btn-primary" onclick="loadTemplate('morning')">
+                                                <i class="fas fa-download"></i>
+                                                استخدام القالب
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- نموذج إضافة مهمة -->
+    <div id="taskFormModal" class="form-modal">
+        <div class="form-content">
+            <div class="form-header">
+                <h3 class="form-title">إضافة مهمة جديدة</h3>
+                <button class="close-btn" id="closeTaskForm">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="taskForm">
+                <div class="form-group">
+                    <label class="form-label" for="taskTitle">عنوان المهمة</label>
+                    <input type="text" class="form-input" id="taskTitle" placeholder="ادخل عنوان المهمة" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="taskDescription">وصف المهمة</label>
+                    <textarea class="form-textarea" id="taskDescription" placeholder="ادخل وصف المهمة"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="taskDate">التاريخ</label>
+                        <input type="date" class="form-input" id="taskDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="taskTime">الوقت</label>
+                        <input type="time" class="form-input" id="taskTime">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="taskCategory">الفئة</label>
+                        <select class="form-select" id="taskCategory">
+                            <option value="study">مذاكرة</option>
+                            <option value="work">عمل</option>
+                            <option value="personal">شخصي</option>
+                            <option value="health">صحة</option>
+                            <option value="other">أخرى</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="taskPriority">الأولوية</label>
+                        <select class="form-select" id="taskPriority">
+                            <option value="low">منخفضة</option>
+                            <option value="medium">متوسطة</option>
+                            <option value="high">عالية</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">نظام التكرار</label>
+                    <div class="repeat-options">
+                        <div class="repeat-option" data-value="none">لا تكرار</div>
+                        <div class="repeat-option" data-value="daily">يومي</div>
+                        <div class="repeat-option" data-value="weekly">أسبوعي</div>
+                        <div class="repeat-option" data-value="monthly">شهري</div>
+                    </div>
+                    <input type="hidden" id="taskRepeat" value="none">
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="taskReminder">
+                        تفعيل التذكير
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">المرفقات</label>
+                    <div class="attachments-list" id="attachmentsList">
+                        <!-- المرفقات تضاف هنا -->
+                    </div>
+                    <input type="file" id="fileInput" style="display: none;" multiple>
+                    <button type="button" class="btn btn-secondary btn-block" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-paperclip"></i>
+                        إضافة مرفقات
+                    </button>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-plus"></i>
+                    إضافة المهمة
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- نموذج إضافة عادة -->
+    <div id="habitFormModal" class="form-modal">
+        <div class="form-content">
+            <div class="form-header">
+                <h3 class="form-title">إضافة عادة جديدة</h3>
+                <button class="close-btn" id="closeHabitForm">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="habitForm">
+                <div class="form-group">
+                    <label class="form-label" for="habitName">اسم العادة</label>
+                    <input type="text" class="form-input" id="habitName" placeholder="ادخل اسم العادة" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="habitDescription">وصف العادة</label>
+                    <textarea class="form-textarea" id="habitDescription" placeholder="ادخل وصف العادة"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="habitCategory">الفئة</label>
+                    <select class="form-select" id="habitCategory">
+                        <option value="health">صحة</option>
+                        <option value="study">دراسة</option>
+                        <option value="productivity">إنتاجية</option>
+                        <option value="personal">شخصي</option>
+                        <option value="other">أخرى</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="habitFrequency">التكرار</label>
+                    <select class="form-select" id="habitFrequency">
+                        <option value="daily">يومي</option>
+                        <option value="weekly">أسبوعي</option>
+                        <option value="monthly">شهري</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="habitGoal">الهدف</label>
+                    <input type="number" class="form-input" id="habitGoal" placeholder="عدد المرات المطلوبة" min="1" value="1">
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    <i class="fas fa-plus"></i>
+                    إضافة العادة
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- وضع التركيز -->
+    <div id="focusMode" class="focus-modal">
+        <div class="focus-task" id="focusTaskTitle">اختر مهمة للتركيز عليها</div>
+        <div class="focus-timer" id="focusTimer">25:00</div>
+        <div class="focus-controls">
+            <button class="btn btn-success" id="startFocus">
+                <i class="fas fa-play"></i>
+                بدء
+            </button>
+            <button class="btn btn-warning" id="pauseFocus" style="display: none;">
+                <i class="fas fa-pause"></i>
+                إيقاف
+            </button>
+            <button class="btn btn-secondary" id="resetFocus">
+                <i class="fas fa-redo"></i>
+                إعادة
+            </button>
+            <button class="btn btn-secondary" id="exitFocus">
+                <i class="fas fa-times"></i>
+                خروج
+            </button>
+        </div>
+        <div class="focus-stats">
+            <div class="focus-stat">
+                <div class="focus-stat-number" id="completedSessions">0</div>
+                <div class="focus-stat-label">جلسات مكتملة</div>
+            </div>
+            <div class="focus-stat">
+                <div class="focus-stat-number" id="totalFocusTime">0</div>
+                <div class="focus-stat-label">دقيقة تركيز</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
